@@ -14,30 +14,7 @@
 #include <string>
 
 #include "ThreadPool.h"
-
-struct Request {
-    int clientSocket;
-    std::string data;
-
-    explicit Request(int socket) : clientSocket(socket) {}
-};
-
-struct Response {
-    int clientSocket;
-
-    explicit Response(int socket) : clientSocket(socket) {}
-
-    ~Response() {
-        if (clientSocket >= 0) {
-            close(clientSocket);
-        }
-    }
-
-    void Send(const std::string& message) {
-        send(clientSocket, message.c_str(), message.size(), 0);
-    }
-};
-
+#include "TCPUtils.h" /* Request & Response structs */
 
 class TCPListener {
 public:
@@ -96,17 +73,18 @@ private:
             Request req(clientSocket);
             Response res(clientSocket);
 
-            char buffer[1024] = {0};
+            uint8_t buffer[1024];
             ssize_t bytesRead = recv(clientSocket, buffer, sizeof(buffer), 0);
 
             if (bytesRead > 0) {
-                req.data = std::string(buffer, bytesRead);
+                req.data = std::vector<uint8_t>(buffer, buffer + bytesRead);  // Fixed this line
                 onNewConnection(req, res);
             } else if (bytesRead == 0) {
                 std::cout << "Client disconnected" << std::endl;
             } else {
                 std::cerr << "Error receiving data" << std::endl;
             }
+
         });
     }
 
